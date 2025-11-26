@@ -1,0 +1,431 @@
+openapi: 3.0.3
+info:
+  title: CCS Multi-Agent System API
+  version: 0.1.0
+  description: |
+    Minimal API surface for the CCS multi-agent coordination system.
+    Agents: Sentinel (monitoring), Compressor (capture), Hauler (logistics),
+    Geologist (sequestration), Guardian (safety). Includes human-in-the-loop endpoints.
+servers:
+  - url: https://api.yourdomain.example/v1
+    description: Primary API server (replace with your host)
+paths:
+  /health:
+    get:
+      summary: System health
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HealthResponse'
+
+  /events/pollution:
+    post:
+      summary: Post pollution event (Sentinel -> Orchestrator)
+      tags: [Sentinel]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/PollutionEvent'
+      responses:
+        "202":
+          description: Accepted
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AcceptedResponse'
+
+  /capture/state:
+    post:
+      summary: Update capture stack / compressor state (Compressor -> Orchestrator)
+      tags: [Compressor]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CaptureState'
+      responses:
+        "200":
+          description: Updated
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/GenericResponse'
+
+  /capture/tank_ready:
+    post:
+      summary: Notify tank ready for transport (Compressor -> Hauler)
+      tags: [Compressor, Hauler]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/TankReady'
+      responses:
+        "201":
+          description: Tank accepted for scheduling
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/TransportAssignment'
+
+  /transport/manifest:
+    post:
+      summary: Create transport manifest / dispatch (Hauler -> Orchestrator)
+      tags: [Hauler]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/TransportManifest'
+      responses:
+        "200":
+          description: Manifest created
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/GenericResponse'
+
+  /sequestration/injection_plan:
+    post:
+      summary: Submit injection plan (Geologist -> Orchestrator)
+      tags: [Geologist]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/InjectionPlan'
+      responses:
+        "200":
+          description: Plan accepted
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PlanAck'
+
+  /safety/alerts:
+    post:
+      summary: Safety / Guardian alerts (Guardian -> Orchestrator / Ops)
+      tags: [Guardian]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/GuardianAlert'
+      responses:
+        "202":
+          description: Alert received
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/GenericResponse'
+
+  /human/approval:
+    post:
+      summary: Human-in-the-loop approval request (Orchestrator -> Human)
+      tags: [Human]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/HumanApprovalRequest'
+      responses:
+        "200":
+          description: Human decision recorded
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HumanApprovalResponse'
+
+components:
+  securitySchemes:
+    ApiKeyAuth:
+      type: apiKey
+      in: header
+      name: X-API-Key
+    WebhookSig:
+      type: http
+      scheme: bearer
+      bearerFormat: webhook-token
+
+  schemas:
+    HealthResponse:
+      type: object
+      properties:
+        status:
+          type: string
+          example: OK
+        timestamp:
+          type: string
+          format: date-time
+
+    AcceptedResponse:
+      type: object
+      properties:
+        status:
+          type: string
+          example: accepted
+        event_id:
+          type: string
+
+    GenericResponse:
+      type: object
+      properties:
+        status:
+          type: string
+          example: success
+        message:
+          type: string
+
+    PlanAck:
+      type: object
+      properties:
+        plan_id:
+          type: string
+          example: INJ-PL-20251124-001
+        accepted:
+          type: boolean
+          example: true
+
+    PollutionEvent:
+      type: object
+      required:
+        - event_id
+        - source_id
+        - source_type
+        - species
+        - timestamp
+      properties:
+        event_id:
+          type: string
+          description: Unique event id
+          example: evt-20251124-001
+        source_id:
+          type: string
+          example: refinery-koyali-01
+        source_type:
+          type: string
+          enum: [point_source, diffuse_source]
+          description: Use point_source for plant stacks; diffuse_source for roadside
+        species:
+          type: object
+          description: key/value map of measured species -> numeric value
+          additionalProperties:
+            type: number
+        units:
+          type: object
+          additionalProperties:
+            type: string
+          example: {"CO2":"ppm","NOx":"ppb"}
+        timestamp:
+          type: string
+          format: date-time
+        confidence:
+          type: number
+          format: float
+          minimum: 0
+          maximum: 1
+          example: 0.95
+        feasibility_flag:
+          type: boolean
+          description: Is seabed storage feasible/recommended for this source?
+
+    CaptureState:
+      type: object
+      required: [unit_id, timestamp]
+      properties:
+        unit_id:
+          type: string
+          example: capture-stack-01
+        absorber_level:
+          type: number
+          example: 0.72
+          description: fraction (0-1)
+        solvent_temp_c:
+          type: number
+          example: 120.5
+        regen_power_kw:
+          type: number
+          example: 250.0
+        chamber_pressure_psi:
+          type: number
+          example: 1500
+        valves:
+          type: object
+          additionalProperties:
+            type: string
+          example: {"inlet":"open","vent":"closed"}
+        timestamp:
+          type: string
+          format: date-time
+
+    TankReady:
+      type: object
+      required: [tank_id, mass_co2_kg, pressure_psi, sealed, origin, timestamp]
+      properties:
+        tank_id:
+          type: string
+          example: TANK-B-004
+        mass_co2_kg:
+          type: number
+          example: 5100
+        pressure_psi:
+          type: number
+          example: 2950
+        sealed:
+          type: boolean
+          example: true
+        origin:
+          type: string
+          example: refinery-koyali-01
+        timestamp:
+          type: string
+          format: date-time
+
+    TransportManifest:
+      type: object
+      required: [manifest_id, tank_id, assigned_vehicle, from, to, eta]
+      properties:
+        manifest_id:
+          type: string
+          example: MAN-20251124-001
+        tank_id:
+          type: string
+        assigned_vehicle:
+          type: string
+          example: HV-TRUCK-09
+        from:
+          type: string
+          description: origin location id
+        to:
+          type: string
+          description: destination (port/well id)
+        route:
+          type: array
+          items:
+            type: string
+        eta:
+          type: string
+          format: date-time
+        constraints:
+          type: object
+          additionalProperties: true
+
+    InjectionPlan:
+      type: object
+      required: [well_id, target_formation, max_injection_pressure_bar, rate_t_per_hour]
+      properties:
+        well_id:
+          type: string
+          example: INJ-W-04
+        target_formation:
+          type: string
+          example: Basalt-Unit-3
+        max_injection_pressure_bar:
+          type: number
+          example: 180
+        rate_t_per_hour:
+          type: number
+          example: 2.5
+        monitoring_frequency_sec:
+          type: integer
+          example: 60
+        start_time:
+          type: string
+          format: date-time
+
+    GuardianAlert:
+      type: object
+      required: [alert_id, severity, reason, action, timestamp]
+      properties:
+        alert_id:
+          type: string
+          example: ALRT-001
+        severity:
+          type: string
+          enum: [low, medium, high, critical]
+        reason:
+          type: string
+        action:
+          type: string
+          enum: [INFO, PAUSE_INJECTION, EMERGENCY_STOP, ISOLATE, NOTIFY]
+        details:
+          type: object
+          additionalProperties: true
+        notify:
+          type: array
+          items:
+            type: string
+        timestamp:
+          type: string
+          format: date-time
+
+    HumanApprovalRequest:
+      type: object
+      required: [request_id, context, required_by]
+      properties:
+        request_id:
+          type: string
+        context:
+          type: object
+          description: arbitrary payload (e.g., injection_plan + risk_score)
+        required_by:
+          type: string
+          description: role or person
+        timeout_seconds:
+          type: integer
+          default: 3600
+
+    HumanApprovalResponse:
+      type: object
+      properties:
+        request_id:
+          type: string
+        approved:
+          type: boolean
+        approver:
+          type: string
+        notes:
+          type: string
+        timestamp:
+          type: string
+          format: date-time
+
+security:
+  - ApiKeyAuth: []
+
+tags:
+  - name: Sentinel
+    description: Monitoring / sensor ingestion
+  - name: Compressor
+    description: Capture stack and tank telemetry
+  - name: Hauler
+    description: Transport / logistics
+  - name: Geologist
+    description: Sequestration / injection plans
+  - name: Guardian
+    description: Safety, alerts and human-in-the-loop
+  - name: Human
+    description: Approval / operator actions
+
+x-notes:
+  eventBusTopics:
+    - pollution_events
+    - capture_states
+    - tank_ready
+    - transport_manifests
+    - injection_plans
+    - guardian_alerts
+  recommendedEventStore: Kafka (or cloud pubsub) for append-only audit log
+  humanNotification: Use Twilio/Slack webhook for immediate HIL alerts; include signed callback token via WebhookSig
+  vectorDB: Weaviate or Pinecone recommended for geological/vectors; provide a dedicated endpoint for Geologist agent queries

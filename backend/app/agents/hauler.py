@@ -1,0 +1,1 @@
+# Hauler agent skeleton

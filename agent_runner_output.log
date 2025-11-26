@@ -1,0 +1,13 @@
+Starting agent runner. Press Ctrl+C to stop.
+[Compressor] starting capture for evt-sentinel-1764075095-0
+[Sentinel] emitted evt-sentinel-1764075095-0 CO2=5000 ppm
+[Hauler] assigned HV-TRUCK-1001 for TANK-R-0001 from refinery-koyali-01
+[Compressor] sealed TANK-R-0001 from refinery-koyali-01
+[Compressor] starting capture for evt-sentinel-1764075101-1
+[Sentinel] emitted evt-sentinel-1764075101-1 CO2=5010 ppm
+[Hauler] delivered TANK-R-0001 to port via HV-TRUCK-1001
+[Geologist] analyzing TANK-R-0001 for injection
+[Geologist] injection complete for TANK-R-0001
+[Guardian] injection_report OK for TANK-R-0001
+Shutdown requested. Stopping agents...
+Agents stopped.
