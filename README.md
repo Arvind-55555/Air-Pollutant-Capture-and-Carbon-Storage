@@ -19,7 +19,9 @@ The system integrates:
 
 ---
 ## Live Demo
-[![View Artifact](https://img.shields.io/badge/View%20Artifact-%230077B5.svg?style=for-the-badge&logo=claude&logoColor=white)](https://claude.ai/public/artifacts/5e8e6f15-c942-4f15-9caa-66509ee90a87)
+<a href="https://claude.ai/public/artifacts/5e8e6f15-c942-4f15-9caa-66509ee90a87" target="_blank">
+  <img src="https://img.shields.io/badge/View%20Artifact-%230077B5.svg?style=for-the-badge&logo=claude&logoColor=white" alt="View Artifact">
+</a>
 
 ---
 
