@@ -18,6 +18,10 @@ The system integrates:
 - Safety, compliance, and audit logging
 
 ---
+## Live Demo
+[![View Artifact](https://img.shields.io/badge/View%20Artifact-%230077B5.svg?style=for-the-badge&logo=claude&logoColor=white)](https://claude.ai/public/artifacts/5e8e6f15-c942-4f15-9caa-66509ee90a87)
+
+---
 
 ## System Goals
 
